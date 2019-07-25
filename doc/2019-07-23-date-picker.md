@@ -1,4 +1,4 @@
-開發筆記｜自己動手刻一個萬年曆與日期選擇器
+# 開發筆記｜自己動手刻一個萬年曆與日期選擇器
 
 平常在網頁前端開發工作中，遇到需要引用日期選擇器（date picker）的地方都會直接使用套件，只要簡單的安裝與載入就可以完成。
 
@@ -40,7 +40,6 @@ vue create vue-date-picker
   - 當前日期、月份、年份，以紅字顯示
   - 被選中的項目以紅圈背景白字顯示
 - 其他後續調整
-
   - 選取上下個月日期灰字可以切過去對應月曆
   - 實作 pros 及 demo page
 
@@ -119,12 +118,81 @@ daysInMonth() {
 
 這邊省略的部分寫的稍微醜一些，直接用兩個迴圈依照邏輯先塞出資料，可能可讀性差一些可以再優化。
 
-另外在「日期」資料的處理上，後面實作一些像是「選定日期要顯示紅圈」的功能才發現要切開，所以最後有根據「當前畫面顯示曆種時用來計算的日期」、「目前被選中的日期」、「今天的日期」這三種才能更有彈性的做到後面的功能。
+### 功能實作
+
+這部分相對就比較單純了，依照前面的綱要，將功能一個一個做出來。
+
+從當月月份切入，在 HTML 中利用 table 去呈現月曆資料，再利用資料切換將每個月曆的畫面做出來，進而將年曆、十年曆補上就完成了，這部分及基本上沒有碰到太大的問題。
+
+只有在「日期」資料的處理上，一開始只用同一份資料去控制「畫面顯示」與「選定日期」，但在實作一些像是「選定日期要顯示紅圈」的功能時才發現要切開，所以最後有根據「當前畫面顯示曆種時用來計算的日期」、「目前被選中的日期」、「今天的日期」這三種才能更有彈性的做到後面的功能。
+
+另外在實作選定日期、今天日期樣式切換時，用了比較繁瑣的判斷去檢查，所以寫了很多 `checkSelected*` 和 `checkCurrent*` 這些 method，可能這部份的流程還可以再優化，但目前以完成功能為主先這樣做。
+
+### 其他後續調整
+
+最後依照規格要求，提供兩個 props 操作這個 component：
+
+- date：就是前述的「目前被選中的日期」。
+- onSelect：在萬年曆元件上選取日期後，會觸發此事件，提供父元件做相對應需要的處理。
+
+在 demo page 上，Task 1 中只簡單顯示目前被選定的日期，實際應用會在日期選擇器中實作。
 
 ## Task 2. 日期選擇器
+
+做完萬年曆元件後，第二部分就簡單一些了，只要將萬年曆元件套用進來，大致上就是像在使用現成套件一樣。
+
+這邊提供使用者兩種操作 date picker 的方式：
+
+- 透過 input 欄位輸入 YYYY-MM-DD 的日期格式
+  - 串 input 與 Calendar 元件資料時，利用 `v-model` 綁定 `inputDate` 資料
+  - 在按下 enter 時才會去驗證，格式正確才將值傳入 `selectedDate`
+  - `selectedDate` 同時也是傳入 Calendar 的 props date，達到可透過輸入跳到該日月曆的效果
+- 透過 date picker 選定日期
+  - 選定日期後，會觸發 `onSelect` 事件，將父層資料 `selectedDate` 指定為選定日期
+  - 將 input 欄位資料 `inputDate` 利用 computed `dateText` 轉換設定為對應字串
+
+由於我在日期資料結構設計上，是用 object 將年月日分開，所以在 Calendar 選定日期後，要將資料轉回 input 欄位另外做了一個字串處理，將日期物件轉成 YYYY-MM-DD 的字串：
+
+```
+dateText() {
+  const { year, month, day } = this.selectedDate
+  const zMonth = ('0' + (month + 1)).slice(-2)
+  const zDay = ('0' + day).slice(-2)
+  return `${year}-${zMonth}-${zDay}`
+}
+```
+
+另外其實當初交出這一份作業時，這個 date picker 沒辦法在點開後點擊旁邊空白處關閉，讓我覺得使用體驗不是太好，後來搜尋了一些 [Vue 在這方面的做法](https://medium.com/@Taha_Shashtari/an-easy-way-to-detect-clicks-outside-an-element-in-vue-1b51d43ff634)，發現可以寫成一個自定義的 [directives](https://vuejs.org/v2/guide/custom-directive.html) 來完成這件事：
+
+```
+directives: {
+  'click-outside': {
+    bind(el, { value }) {
+      handleOutsideClick = e => {
+        const isClickOutside = e.target !== el && !el.contains(e.target)
+        if (isClickOutside) value(e)
+        e.stopPropagation()
+      }
+      document.addEventListener('click', handleOutsideClick)
+      document.addEventListener('touchstart', handleOutsideClick)
+    },
+    unbind() {
+      document.removeEventListener('click', handleOutsideClick)
+      document.removeEventListener('touchstart', handleOutsideClick)
+    }
+  }
+}
+```
+
+最後再將 input 欄位與 Calendar 元件包在一個 div 中，在這個 div 上加 `v-click-outside="onClose"` 就可以達成想要的效果了，可喜可賀！
+
+## 後記
+
+第一次自己動手刻萬年曆跟日期選擇器的體驗還是蠻有趣的，要不是剛好有這個機會練習，可能也不會知道關於萬年曆的這些細節，也在寫文章時為了要將功能呈現完整，加上了最後提到的 click outside 的功能，第一次嘗試在 Vue 中自己寫 directives 也是學會一個新玩意，整體而言學到不少東西，齁勝！
 
 ## 參考資料
 
 - https://github.com/charliekassel/vuejs-datepicker
 - https://element.eleme.io/#/zh-CN/component/date-picker
 - https://en.wikipedia.org/wiki/Zeller%27s_congruence
+- https://medium.com/@Taha_Shashtari/an-easy-way-to-detect-clicks-outside-an-element-in-vue-1b51d43ff634
