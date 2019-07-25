@@ -1,4 +1,5 @@
-# 開發筆記｜自己動手刻一個萬年曆與日期選擇器
+開發筆記｜自己動手刻一個萬年曆與日期選擇器
+==
 
 平常在網頁前端開發工作中，遇到需要引用日期選擇器（date picker）的地方都會直接使用套件，只要簡單的安裝與載入就可以完成。
 
@@ -94,12 +95,13 @@ zellerCongruence(year, month, day) {
 
 這邊有個有趣的小知識是西元 1582 年 10 月改曆，所以正確的月曆應該要長這個樣子：
 
-![1582.10 月曆](https://theuijunkie.com/wp-content/uploads/2017/02/october1582-copy.png)
-[圖片出處](https://theuijunkie.com/october-5th-october-14th-1582/)
+![1582.10 月曆](https://i.imgur.com/X9LNL7O.png)
+
+###### [(圖片出處)](https://theuijunkie.com/october-5th-october-14th-1582/)
 
 因此 1582.10.04 以前的日期規則不一樣，要用另一個公式處理，但確認了一些常見的 date picker 套件都沒有對這個特例做處理，而且也幾乎不太有機會用到四百多年前的月曆，甚至有些套件的最早的年份只到 1900 年，所以這邊就先不處理。
 
-以上有了  這兩項資料後，就可以組出某個特定月份的月曆資料，這邊利用上述兩個 method 用一個 computed 去準備這份資料：
+有了以上這兩項資料後，就可以組出某個特定月份的月曆資料，這邊利用上述兩個 method 用一個 computed 去準備這份資料：
 
 ```
 daysInMonth() {
